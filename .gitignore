@@ -2,5 +2,3 @@ node_modules/
 data/
 .env
 .DS_Store
-.vercel
-.env*.local

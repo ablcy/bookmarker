@@ -195,8 +195,8 @@ class ChatApp {
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('main-screen').style.display = 'flex';
         this.updateProfile();
-        this.renderChatList();
         this.renderContactsList();
+        this.renderChatList();
     }
 
     updateProfile() {
@@ -229,6 +229,12 @@ class ChatApp {
             me: '我'
         };
         document.getElementById('page-title').textContent = titles[tab];
+        
+        if (tab === 'contacts') {
+            this.renderContactsList();
+        } else if (tab === 'chats') {
+            this.renderChatList();
+        }
     }
 
     renderChatList() {
@@ -400,6 +406,9 @@ class ChatApp {
         } else {
             this.friends = [];
         }
+        
+        this.renderContactsList();
+        this.renderChatList();
     }
 
     async loadMessages() {
