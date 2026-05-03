@@ -4,8 +4,8 @@ class ChatApp {
         this.currentFriend = null;
         this.messages = {};
         this.friends = [];
-        this.socket = null;
-        this.baseUrl = window.location.origin.includes('localhost') ? 'http://localhost:3000' : window.location.origin;
+        this.baseUrl = window.location.origin;
+        this.pollInterval = null;
         this.init();
     }
 
@@ -31,41 +31,26 @@ class ChatApp {
         const storedUser = localStorage.getItem('currentUser');
         if (storedUser) {
             this.currentUser = JSON.parse(storedUser);
-            this.connectSocket();
             this.loadFriends();
             this.loadMessages();
             this.showMainScreen();
+            this.startPolling();
         }
     }
 
-    connectSocket() {
-        this.socket = io(this.baseUrl);
-        
-        this.socket.on('connect', () => {
-            console.log('Connected to server');
-            this.socket.emit('authenticate', this.currentUser.id);
-        });
-        
-        this.socket.on('new_message', (data) => {
-            const { senderId, message } = data;
-            if (!this.messages[senderId]) {
-                this.messages[senderId] = [];
+    startPolling() {
+        this.pollInterval = setInterval(() => {
+            if (this.currentUser) {
+                this.loadMessages();
             }
-            this.messages[senderId].push(message);
-            this.renderFriendsList();
-            
-            if (this.currentFriend && this.currentFriend.id === senderId) {
-                this.renderMessages();
-            }
-        });
-        
-        this.socket.on('message_sent', (message) => {
-            console.log('Message sent:', message);
-        });
-        
-        this.socket.on('disconnect', () => {
-            console.log('Disconnected from server');
-        });
+        }, 2000);
+    }
+
+    stopPolling() {
+        if (this.pollInterval) {
+            clearInterval(this.pollInterval);
+            this.pollInterval = null;
+        }
     }
 
     async fetchData(url, options = {}) {
@@ -115,10 +100,10 @@ class ChatApp {
         if (result.success) {
             this.currentUser = result.user;
             localStorage.setItem('currentUser', JSON.stringify(result.user));
-            this.connectSocket();
             await this.loadFriends();
             await this.loadMessages();
             this.showMainScreen();
+            this.startPolling();
         } else {
             document.getElementById('login-error').textContent = result.message || '登录失败';
         }
@@ -148,10 +133,10 @@ class ChatApp {
         if (result.success) {
             this.currentUser = result.user;
             localStorage.setItem('currentUser', JSON.stringify(result.user));
-            this.connectSocket();
             this.friends = [];
             this.messages = {};
             this.showMainScreen();
+            this.startPolling();
         } else {
             document.getElementById('register-error').textContent = result.message || '注册失败';
         }
@@ -175,9 +160,7 @@ class ChatApp {
 
     logout() {
         localStorage.removeItem('currentUser');
-        if (this.socket) {
-            this.socket.disconnect();
-        }
+        this.stopPolling();
         this.currentUser = null;
         this.currentFriend = null;
         this.friends = [];
@@ -210,6 +193,11 @@ class ChatApp {
             } else {
                 this.messages[friend.id] = [];
             }
+        }
+        
+        this.renderFriendsList();
+        if (this.currentFriend) {
+            this.renderMessages();
         }
     }
 
@@ -271,7 +259,7 @@ class ChatApp {
 
     getUnreadCount(friendId) {
         const friendMessages = this.messages[friendId] || [];
-        return friendMessages.filter(m => !m.read).length;
+        return friendMessages.filter(m => !m.read && m.senderId !== this.currentUser.id).length;
     }
 
     selectFriend(friendId) {
@@ -293,13 +281,14 @@ class ChatApp {
         this.showMessageInput();
     }
 
-    markMessagesAsRead(friendId) {
+    async markMessagesAsRead(friendId) {
         const friendMessages = this.messages[friendId] || [];
         friendMessages.forEach(m => m.read = true);
         
-        if (this.socket) {
-            this.socket.emit('mark_read', { userId: this.currentUser.id, friendId });
-        }
+        await this.fetchData('/api/mark-read', {
+            method: 'POST',
+            body: JSON.stringify({ userId: this.currentUser.id, friendId })
+        });
         
         this.renderFriendsList();
     }
@@ -348,41 +337,29 @@ class ChatApp {
         document.getElementById('message-input').focus();
     }
 
-    send() {
+    async send() {
         const input = document.getElementById('message-input');
         const content = input.value.trim();
 
         if (!content || !this.currentFriend) return;
 
-        if (this.socket) {
-            this.socket.emit('send_message', {
+        const result = await this.fetchData('/api/send-message', {
+            method: 'POST',
+            body: JSON.stringify({
                 senderId: this.currentUser.id,
                 receiverId: this.currentFriend.id,
                 content
-            });
+            })
+        });
 
-            const message = {
-                id: Date.now().toString(),
-                senderId: this.currentUser.id,
-                content,
-                time: this.formatTime(new Date()),
-                read: false
-            };
-
+        if (result.success) {
             if (!this.messages[this.currentFriend.id]) {
                 this.messages[this.currentFriend.id] = [];
             }
-
-            this.messages[this.currentFriend.id].push(message);
+            this.messages[this.currentFriend.id].push(result.message);
             input.value = '';
             this.renderMessages();
         }
-    }
-
-    formatTime(date) {
-        const hours = date.getHours().toString().padStart(2, '0');
-        const minutes = date.getMinutes().toString().padStart(2, '0');
-        return `${hours}:${minutes}`;
     }
 }
 

@@ -1,23 +1,8 @@
 const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
-const fs = require('fs');
-const path = require('path');
 
 const app = express();
-const server = http.createServer(app);
-
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-    transports: ["websocket", "polling"]
-  },
-  allowEIO3: true,
-  pingTimeout: 60000
-});
 
 app.use(cors());
 app.use(express.json());
@@ -148,75 +133,62 @@ app.get('/api/messages/:userId/:friendId', (req, res) => {
   res.json({ success: true, messages: friendMessages });
 });
 
+app.post('/api/send-message', (req, res) => {
+  const { senderId, receiverId, content } = req.body;
+  
+  const message = {
+    id: generateId(),
+    senderId,
+    content,
+    time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+    timestamp: Date.now(),
+    read: false
+  };
+  
+  if (!messages[senderId]) {
+    messages[senderId] = {};
+  }
+  if (!messages[senderId][receiverId]) {
+    messages[senderId][receiverId] = [];
+  }
+  messages[senderId][receiverId].push(message);
+  
+  if (!messages[receiverId]) {
+    messages[receiverId] = {};
+  }
+  if (!messages[receiverId][senderId]) {
+    messages[receiverId][senderId] = [];
+  }
+  messages[receiverId][senderId].push(message);
+  
+  res.json({ success: true, message });
+});
+
+app.post('/api/mark-read', (req, res) => {
+  const { userId, friendId } = req.body;
+  
+  if (messages[userId] && messages[userId][friendId]) {
+    messages[userId][friendId].forEach(msg => {
+      if (msg.senderId !== userId) {
+        msg.read = true;
+      }
+    });
+  }
+  
+  res.json({ success: true });
+});
+
 app.get('/api/users', (req, res) => {
   const userList = Object.values(users).map(u => ({ id: u.id, username: u.username }));
   res.json({ success: true, users: userList });
 });
 
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
-  
-  socket.on('authenticate', (userId) => {
-    socket.userId = userId;
-    socket.join(userId);
-    console.log(`User ${userId} joined room`);
-  });
-  
-  socket.on('send_message', (data) => {
-    const { senderId, receiverId, content } = data;
-    
-    const message = {
-      id: generateId(),
-      senderId,
-      content,
-      time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
-      timestamp: Date.now(),
-      read: false
-    };
-    
-    if (!messages[senderId]) {
-      messages[senderId] = {};
-    }
-    if (!messages[senderId][receiverId]) {
-      messages[senderId][receiverId] = [];
-    }
-    messages[senderId][receiverId].push(message);
-    
-    if (!messages[receiverId]) {
-      messages[receiverId] = {};
-    }
-    if (!messages[receiverId][senderId]) {
-      messages[receiverId][senderId] = [];
-    }
-    messages[receiverId][senderId].push(message);
-    
-    io.to(receiverId).emit('new_message', {
-      senderId,
-      message
-    });
-    
-    socket.emit('message_sent', message);
-  });
-  
-  socket.on('mark_read', (data) => {
-    const { userId, friendId } = data;
-    
-    if (messages[userId] && messages[userId][friendId]) {
-      messages[userId][friendId].forEach(msg => {
-        if (msg.senderId !== userId) {
-          msg.read = true;
-        }
-      });
-    }
-  });
-  
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-  });
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/index.html');
 });
 
 const PORT = process.env.PORT || 3000;
 
-server.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
