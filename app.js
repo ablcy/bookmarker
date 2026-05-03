@@ -7,12 +7,14 @@ class ChatApp {
         this.baseUrl = window.location.origin;
         this.pollInterval = null;
         this.currentTab = 'chats';
+        this.startTime = new Date('2026-05-03T19:34:00');
         this.init();
     }
 
     init() {
         this.bindEvents();
         this.loadUserData();
+        this.startUptimeTimer();
     }
 
     bindEvents() {
@@ -20,24 +22,57 @@ class ChatApp {
         document.getElementById('register-tab').addEventListener('click', () => this.showRegister());
         document.getElementById('login-form').addEventListener('submit', (e) => this.handleLogin(e));
         document.getElementById('register-form').addEventListener('submit', (e) => this.handleRegister(e));
-        
+
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', () => this.switchTab(item.dataset.tab));
         });
-        
+
         document.getElementById('back-btn').addEventListener('click', () => this.closeChatView());
         document.getElementById('send-btn').addEventListener('click', () => this.send());
         document.getElementById('message-input').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.send();
         });
-        
+
         document.getElementById('add-friend-btn').addEventListener('click', () => this.showAddFriendModal());
         document.getElementById('close-modal-btn').addEventListener('click', () => this.closeAddFriendModal());
         document.getElementById('confirm-add-friend-btn').addEventListener('click', () => this.addFriend());
-        
+
         document.getElementById('logout-btn').addEventListener('click', () => this.logout());
-        
+
         document.getElementById('share-app-btn').addEventListener('click', () => this.shareApp());
+    }
+
+    startUptimeTimer() {
+        this.updateUptime();
+        setInterval(() => this.updateUptime(), 1000);
+    }
+
+    updateUptime() {
+        const now = new Date();
+        const diff = now - this.startTime;
+
+        if (diff < 0) {
+            document.getElementById('uptime-display').textContent = '即将上线';
+            return;
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        let uptimeText = '';
+        if (days > 0) {
+            uptimeText = `${days}天 ${hours}小时`;
+        } else if (hours > 0) {
+            uptimeText = `${hours}小时 ${minutes}分`;
+        } else if (minutes > 0) {
+            uptimeText = `${minutes}分 ${seconds}秒`;
+        } else {
+            uptimeText = `${seconds}秒`;
+        }
+
+        document.getElementById('uptime-display').textContent = `已运行 ${uptimeText}`;
     }
 
     loadUserData() {
@@ -173,20 +208,20 @@ class ChatApp {
 
     switchTab(tab) {
         this.currentTab = tab;
-        
+
         document.querySelectorAll('.nav-item').forEach(item => {
             item.classList.remove('active');
             if (item.dataset.tab === tab) {
                 item.classList.add('active');
             }
         });
-        
+
         document.querySelectorAll('.tab-content').forEach(content => {
             content.classList.remove('active');
         });
-        
+
         document.getElementById(`tab-${tab}`).classList.add('active');
-        
+
         const titles = {
             chats: 'YanChat',
             contacts: '通讯录',
@@ -198,7 +233,7 @@ class ChatApp {
 
     renderChatList() {
         const chatList = document.getElementById('chat-list');
-        
+
         if (this.friends.length === 0) {
             chatList.innerHTML = '<div class="empty-state">暂无聊天记录</div>';
             return;
@@ -208,7 +243,7 @@ class ChatApp {
             const friendMessages = this.messages[friend.id] || [];
             const lastMessage = friendMessages[friendMessages.length - 1];
             const unreadCount = this.getUnreadCount(friend.id);
-            
+
             return `
                 <div class="chat-item" data-friend-id="${friend.id}">
                     <div class="avatar">
@@ -233,7 +268,7 @@ class ChatApp {
 
     renderContactsList() {
         const contactsList = document.getElementById('contacts-list');
-        
+
         if (this.friends.length === 0) {
             contactsList.innerHTML = '<div class="empty-state">暂无好友</div>';
             return;
@@ -281,25 +316,25 @@ class ChatApp {
     async markMessagesAsRead(friendId) {
         const friendMessages = this.messages[friendId] || [];
         friendMessages.forEach(m => m.read = true);
-        
+
         await this.fetchData('/api/mark-read', {
             method: 'POST',
             body: JSON.stringify({ userId: this.currentUser.id, friendId })
         });
-        
+
         this.renderChatList();
     }
 
     renderMessages() {
         const container = document.getElementById('messages-container');
-        
+
         if (!this.currentFriend) {
             container.innerHTML = '<div class="empty-chat"><p>开始聊天吧！</p></div>';
             return;
         }
 
         const friendMessages = this.messages[this.currentFriend.id] || [];
-        
+
         if (friendMessages.length === 0) {
             container.innerHTML = '<div class="empty-chat"><p>开始聊天吧！</p></div>';
             return;
@@ -357,9 +392,9 @@ class ChatApp {
 
     async loadFriends() {
         if (!this.currentUser) return;
-        
+
         const result = await this.fetchData(`/api/friends/${this.currentUser.id}`);
-        
+
         if (result.success) {
             this.friends = result.friends;
         } else {
@@ -369,7 +404,7 @@ class ChatApp {
 
     async loadMessages() {
         if (!this.currentUser) return;
-        
+
         for (const friend of this.friends) {
             const result = await this.fetchData(`/api/messages/${this.currentUser.id}/${friend.id}`);
             if (result.success) {
@@ -378,7 +413,7 @@ class ChatApp {
                 this.messages[friend.id] = [];
             }
         }
-        
+
         this.renderChatList();
         if (this.currentFriend) {
             this.renderMessages();
@@ -427,8 +462,8 @@ class ChatApp {
     }
 
     shareApp() {
-        const shareText = `我在使用 YanChat，快来和我聊天吧！访问: ${window.location.href}`;
-        
+        const shareText = `我在使用 YanChat v0.0.3，快来和我聊天吧！访问: ${window.location.href}`;
+
         if (navigator.share) {
             navigator.share({
                 title: 'YanChat',

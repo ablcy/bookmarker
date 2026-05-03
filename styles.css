@@ -149,6 +149,33 @@ form button[type="submit"]:hover {
     min-height: 20px;
 }
 
+.version-info {
+    margin-top: 30px;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.version-info span:first-child {
+    color: var(--wechat-green);
+    font-weight: 600;
+}
+
+.copyright {
+    font-size: 0.75rem;
+}
+
+.main-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
 .header {
     background: var(--white);
     padding: 12px 16px;
@@ -166,6 +193,29 @@ form button[type="submit"]:hover {
     font-weight: 600;
 }
 
+.header-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.uptime {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    background: var(--bg-color);
+    padding: 4px 10px;
+    border-radius: 12px;
+}
+
+.version-badge {
+    font-size: 0.7rem;
+    color: var(--wechat-green);
+    background: rgba(7, 193, 96, 0.1);
+    padding: 3px 8px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
 .icon-btn {
     background: none;
     border: none;
@@ -179,6 +229,7 @@ form button[type="submit"]:hover {
     flex: 1;
     padding-bottom: 60px;
     background: var(--bg-color);
+    overflow-y: auto;
 }
 
 .tab-content {
@@ -517,6 +568,43 @@ form button[type="submit"]:hover {
     cursor: pointer;
 }
 
+.update-info {
+    background: var(--white);
+    margin: 10px 0;
+    padding: 20px 16px;
+    border-radius: 0;
+}
+
+.update-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.update-icon {
+    font-size: 1.5rem;
+}
+
+.update-header h3 {
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.update-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.update-item {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
 .discover-list {
     margin-top: 10px;
 }
@@ -605,6 +693,22 @@ form button[type="submit"]:hover {
     color: var(--text-secondary);
 }
 
+.footer-info {
+    margin-top: 30px;
+    padding: 20px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.footer-info p:first-child {
+    font-size: 0.85rem;
+    margin-bottom: 5px;
+}
+
+.footer-info .copyright {
+    font-size: 0.75rem;
+}
+
 .empty-state {
     text-align: center;
     padding: 40px 20px;
@@ -621,28 +725,58 @@ form button[type="submit"]:hover {
 }
 
 @media (min-width: 768px) {
-    .main-screen {
+    .main-wrapper {
         max-width: 480px;
-        margin: 0 auto;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.15);
+        position: relative;
     }
     
     .bottom-nav {
         max-width: 480px;
         left: 50%;
-        transform: translateX(50%);
+        transform: translateX(-50%);
     }
     
     .chat-view {
         max-width: 480px;
         left: 50%;
-        transform: translateX(50%);
+        transform: translateX(-50%);
     }
     
     .modal {
         max-width: 480px;
         left: 50%;
-        transform: translateX(50%);
+        transform: translateX(-50%);
+    }
+    
+    body {
+        background: #1a1a1a;
+    }
+    
+    .auth-container {
+        margin: 20px;
+    }
+}
+
+@media (min-width: 1024px) {
+    .main-wrapper {
+        max-width: 500px;
+    }
+    
+    .header h1 {
+        font-size: 1.3rem;
+    }
+    
+    .nav-item {
+        padding: 8px 25px;
+    }
+    
+    .nav-icon {
+        font-size: 1.5rem;
+    }
+    
+    .nav-item span:last-child {
+        font-size: 0.75rem;
     }
 }
 
@@ -657,5 +791,14 @@ form button[type="submit"]:hover {
     
     .nav-item span:last-child {
         font-size: 0.6rem;
+    }
+    
+    .header-info {
+        gap: 8px;
+    }
+    
+    .uptime {
+        font-size: 0.7rem;
+        padding: 3px 6px;
     }
 }

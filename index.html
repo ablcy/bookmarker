@@ -35,81 +35,110 @@
                     <button type="submit">注册</button>
                     <p class="error-message" id="register-error"></p>
                 </form>
+                
+                <div class="version-info">
+                    <span>v0.0.3</span>
+                    <span class="copyright">Copyright © 2026 Li Chengyan. All Rights Reserved.</span>
+                </div>
             </div>
         </div>
 
         <div id="main-screen" class="screen" style="display: none;">
-            <header class="header">
-                <h1 id="page-title">YanChat</h1>
-                <button id="menu-btn" class="icon-btn">☰</button>
-            </header>
+            <div class="main-wrapper">
+                <header class="header">
+                    <h1 id="page-title">YanChat</h1>
+                    <div class="header-info">
+                        <span id="uptime-display" class="uptime"></span>
+                        <span class="version-badge">v0.0.3</span>
+                    </div>
+                </header>
 
-            <main class="main-content">
-                <div id="tab-chats" class="tab-content active">
-                    <div class="search-bar">
-                        <input type="text" placeholder="搜索" id="search-input">
-                    </div>
-                    <div class="chat-list" id="chat-list">
-                        <div class="empty-state">暂无聊天记录</div>
-                    </div>
-                </div>
-
-                <div id="tab-contacts" class="tab-content">
-                    <div class="search-bar">
-                        <input type="text" placeholder="搜索好友" id="search-contact-input">
-                    </div>
-                    <div class="contacts-list" id="contacts-list">
-                        <div class="empty-state">暂无好友</div>
-                    </div>
-                    <button id="add-friend-btn" class="fab-btn">+</button>
-                </div>
-
-                <div id="tab-discover" class="tab-content">
-                    <div class="discover-list">
-                        <div class="discover-item" id="share-app-btn">
-                            <span class="discover-icon">📤</span>
-                            <span>分享应用</span>
-                            <span class="arrow">›</span>
+                <main class="main-content">
+                    <div id="tab-chats" class="tab-content active">
+                        <div class="search-bar">
+                            <input type="text" placeholder="搜索" id="search-input">
+                        </div>
+                        <div class="chat-list" id="chat-list">
+                            <div class="empty-state">暂无聊天记录</div>
                         </div>
                     </div>
-                </div>
 
-                <div id="tab-me" class="tab-content">
-                    <div class="profile-header">
-                        <div class="avatar-large">
-                            <span id="profile-avatar">?</span>
+                    <div id="tab-contacts" class="tab-content">
+                        <div class="search-bar">
+                            <input type="text" placeholder="搜索好友" id="search-contact-input">
                         </div>
-                        <div class="profile-info">
-                            <span id="profile-username" class="profile-name">未登录</span>
+                        <div class="contacts-list" id="contacts-list">
+                            <div class="empty-state">暂无好友</div>
+                        </div>
+                        <button id="add-friend-btn" class="fab-btn">+</button>
+                    </div>
+
+                    <div id="tab-discover" class="tab-content">
+                        <div class="update-info">
+                            <div class="update-header">
+                                <span class="update-icon">📢</span>
+                                <h3>更新日志 v0.0.3</h3>
+                            </div>
+                            <div class="update-content">
+                                <div class="update-item">✨ 全新微信风格界面</div>
+                                <div class="update-item">📱 优化手机端适配</div>
+                                <div class="update-item">🖥️ 新增电脑端适配</div>
+                                <div class="update-item">💬 消息列表优化</div>
+                                <div class="update-item">👥 通讯录功能</div>
+                                <div class="update-item">🔍 发现页面</div>
+                                <div class="update-item">⏱️ 网站运行时长显示</div>
+                            </div>
+                        </div>
+                        <div class="discover-list">
+                            <div class="discover-item" id="share-app-btn">
+                                <span class="discover-icon">📤</span>
+                                <span>分享应用</span>
+                                <span class="arrow">›</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="settings-list">
-                        <div class="settings-item" id="logout-btn">
-                            <span>退出登录</span>
-                            <span class="arrow">›</span>
+
+                    <div id="tab-me" class="tab-content">
+                        <div class="profile-header">
+                            <div class="avatar-large">
+                                <span id="profile-avatar">?</span>
+                            </div>
+                            <div class="profile-info">
+                                <span id="profile-username" class="profile-name">未登录</span>
+                            </div>
+                        </div>
+                        <div class="settings-list">
+                            <div class="settings-item" id="logout-btn">
+                                <span>退出登录</span>
+                                <span class="arrow">›</span>
+                            </div>
+                        </div>
+                        <div class="footer-info">
+                            <p>YanChat v0.0.3</p>
+                            <p class="copyright">Copyright © 2026 Li Chengyan. All Rights Reserved.</p>
                         </div>
                     </div>
-                </div>
-            </main>
+                </main>
 
-            <nav class="bottom-nav">
-                <div class="nav-item active" data-tab="chats">
-                    <span class="nav-icon">💬</span>
-                    <span>消息</span>
-                </div>
-                <div class="nav-item" data-tab="contacts">
-                    <span class="nav-icon">👥</span>
-                    <span>通讯录</span>
-                </div>
-                <div class="nav-item" data-tab="discover">
-                    <span class="nav-icon">🔍</span>
-                    <span>发现</span>
-                </div>
-                <div class="nav-item" data-tab="me">
-                    <span class="nav-icon">👤</span>
-                    <span>我</span>
-                </div>
-            </nav>
+                <nav class="bottom-nav">
+                    <div class="nav-item active" data-tab="chats">
+                        <span class="nav-icon">💬</span>
+                        <span>消息</span>
+                    </div>
+                    <div class="nav-item" data-tab="contacts">
+                        <span class="nav-icon">👥</span>
+                        <span>通讯录</span>
+                    </div>
+                    <div class="nav-item" data-tab="discover">
+                        <span class="nav-icon">🔍</span>
+                        <span>发现</span>
+                    </div>
+                    <div class="nav-item" data-tab="me">
+                        <span class="nav-icon">👤</span>
+                        <span>我</span>
+                    </div>
+                </nav>
+            </div>
 
             <div id="chat-view" class="chat-view" style="display: none;">
                 <div class="chat-header">
