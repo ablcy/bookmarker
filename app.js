@@ -6,6 +6,7 @@ class ChatApp {
         this.friends = [];
         this.baseUrl = window.location.origin;
         this.pollInterval = null;
+        this.currentTab = 'chats';
         this.init();
     }
 
@@ -19,12 +20,24 @@ class ChatApp {
         document.getElementById('register-tab').addEventListener('click', () => this.showRegister());
         document.getElementById('login-form').addEventListener('submit', (e) => this.handleLogin(e));
         document.getElementById('register-form').addEventListener('submit', (e) => this.handleRegister(e));
-        document.getElementById('logout-btn').addEventListener('click', () => this.logout());
-        document.getElementById('add-friend-btn').addEventListener('click', () => this.addFriend());
+        
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => this.switchTab(item.dataset.tab));
+        });
+        
+        document.getElementById('back-btn').addEventListener('click', () => this.closeChatView());
         document.getElementById('send-btn').addEventListener('click', () => this.send());
         document.getElementById('message-input').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.send();
         });
+        
+        document.getElementById('add-friend-btn').addEventListener('click', () => this.showAddFriendModal());
+        document.getElementById('close-modal-btn').addEventListener('click', () => this.closeAddFriendModal());
+        document.getElementById('confirm-add-friend-btn').addEventListener('click', () => this.addFriend());
+        
+        document.getElementById('logout-btn').addEventListener('click', () => this.logout());
+        
+        document.getElementById('share-app-btn').addEventListener('click', () => this.shareApp());
     }
 
     loadUserData() {
@@ -143,32 +156,203 @@ class ChatApp {
     }
 
     showMainScreen() {
+        document.getElementById('auth-screen').classList.remove('screen');
         document.getElementById('auth-screen').style.display = 'none';
         document.getElementById('main-screen').style.display = 'flex';
-        this.updateUserInfo();
-        this.renderFriendsList();
+        this.updateProfile();
+        this.renderChatList();
+        this.renderContactsList();
     }
 
-    updateUserInfo() {
-        const avatar = document.querySelector('.user-info .avatar span');
-        const username = document.querySelector('.user-details .username');
+    updateProfile() {
         if (this.currentUser) {
-            avatar.textContent = this.currentUser.username.charAt(0).toUpperCase();
-            username.textContent = this.currentUser.username;
+            document.getElementById('profile-avatar').textContent = this.currentUser.username.charAt(0).toUpperCase();
+            document.getElementById('profile-username').textContent = this.currentUser.username;
         }
     }
 
-    logout() {
-        localStorage.removeItem('currentUser');
-        this.stopPolling();
-        this.currentUser = null;
+    switchTab(tab) {
+        this.currentTab = tab;
+        
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active');
+            if (item.dataset.tab === tab) {
+                item.classList.add('active');
+            }
+        });
+        
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        document.getElementById(`tab-${tab}`).classList.add('active');
+        
+        const titles = {
+            chats: 'YanChat',
+            contacts: '通讯录',
+            discover: '发现',
+            me: '我'
+        };
+        document.getElementById('page-title').textContent = titles[tab];
+    }
+
+    renderChatList() {
+        const chatList = document.getElementById('chat-list');
+        
+        if (this.friends.length === 0) {
+            chatList.innerHTML = '<div class="empty-state">暂无聊天记录</div>';
+            return;
+        }
+
+        chatList.innerHTML = this.friends.map(friend => {
+            const friendMessages = this.messages[friend.id] || [];
+            const lastMessage = friendMessages[friendMessages.length - 1];
+            const unreadCount = this.getUnreadCount(friend.id);
+            
+            return `
+                <div class="chat-item" data-friend-id="${friend.id}">
+                    <div class="avatar">
+                        <span>${friend.username.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <div class="chat-info">
+                        <div class="chat-name">${friend.username}</div>
+                        <div class="chat-preview">${lastMessage ? lastMessage.content : '暂无消息'}</div>
+                    </div>
+                    <div>
+                        ${lastMessage ? `<div class="chat-time">${lastMessage.time}</div>` : ''}
+                        ${unreadCount > 0 ? `<div class="unread-badge">${unreadCount}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        document.querySelectorAll('.chat-item').forEach(item => {
+            item.addEventListener('click', () => this.openChat(item.dataset.friendId));
+        });
+    }
+
+    renderContactsList() {
+        const contactsList = document.getElementById('contacts-list');
+        
+        if (this.friends.length === 0) {
+            contactsList.innerHTML = '<div class="empty-state">暂无好友</div>';
+            return;
+        }
+
+        contactsList.innerHTML = this.friends.map(friend => `
+            <div class="contact-item" data-friend-id="${friend.id}">
+                <div class="avatar">
+                    <span>${friend.username.charAt(0).toUpperCase()}</span>
+                </div>
+                <span class="contact-name">${friend.username}</span>
+            </div>
+        `).join('');
+
+        document.querySelectorAll('.contact-item').forEach(item => {
+            item.addEventListener('click', () => {
+                this.openChat(item.dataset.friendId);
+                this.switchTab('chats');
+            });
+        });
+    }
+
+    getUnreadCount(friendId) {
+        const friendMessages = this.messages[friendId] || [];
+        return friendMessages.filter(m => !m.read && m.senderId !== this.currentUser.id).length;
+    }
+
+    openChat(friendId) {
+        const friend = this.friends.find(f => f.id === friendId);
+        if (!friend) return;
+
+        this.currentFriend = friend;
+        document.getElementById('chat-friend-name').textContent = friend.username;
+        this.renderMessages();
+        this.markMessagesAsRead(friendId);
+        document.getElementById('chat-view').style.display = 'flex';
+    }
+
+    closeChatView() {
+        document.getElementById('chat-view').style.display = 'none';
         this.currentFriend = null;
-        this.friends = [];
-        this.messages = {};
-        document.getElementById('main-screen').style.display = 'none';
-        document.getElementById('auth-screen').style.display = 'flex';
-        document.getElementById('login-username').value = '';
-        document.getElementById('login-password').value = '';
+        this.renderChatList();
+    }
+
+    async markMessagesAsRead(friendId) {
+        const friendMessages = this.messages[friendId] || [];
+        friendMessages.forEach(m => m.read = true);
+        
+        await this.fetchData('/api/mark-read', {
+            method: 'POST',
+            body: JSON.stringify({ userId: this.currentUser.id, friendId })
+        });
+        
+        this.renderChatList();
+    }
+
+    renderMessages() {
+        const container = document.getElementById('messages-container');
+        
+        if (!this.currentFriend) {
+            container.innerHTML = '<div class="empty-chat"><p>开始聊天吧！</p></div>';
+            return;
+        }
+
+        const friendMessages = this.messages[this.currentFriend.id] || [];
+        
+        if (friendMessages.length === 0) {
+            container.innerHTML = '<div class="empty-chat"><p>开始聊天吧！</p></div>';
+            return;
+        }
+
+        container.innerHTML = friendMessages.map(msg => `
+            <div class="message ${msg.senderId === this.currentUser.id ? 'sent' : 'received'}">
+                <p>${msg.content}</p>
+                <span class="message-time">${msg.time}</span>
+            </div>
+        `).join('');
+
+        container.scrollTop = container.scrollHeight;
+    }
+
+    showAddFriendModal() {
+        document.getElementById('add-friend-modal').style.display = 'flex';
+        document.getElementById('add-friend-input').value = '';
+        document.getElementById('add-friend-error').textContent = '';
+    }
+
+    closeAddFriendModal() {
+        document.getElementById('add-friend-modal').style.display = 'none';
+    }
+
+    async addFriend() {
+        const friendUsername = document.getElementById('add-friend-input').value.trim();
+        const errorElement = document.getElementById('add-friend-error');
+
+        if (!friendUsername) {
+            errorElement.textContent = '请输入用户名';
+            return;
+        }
+
+        if (friendUsername === this.currentUser.username) {
+            errorElement.textContent = '不能添加自己为好友';
+            return;
+        }
+
+        const result = await this.fetchData('/api/add-friend', {
+            method: 'POST',
+            body: JSON.stringify({ userId: this.currentUser.id, friendUsername })
+        });
+
+        if (result.success) {
+            this.friends.push(result.friend);
+            this.messages[result.friend.id] = [];
+            this.closeAddFriendModal();
+            this.renderContactsList();
+            this.renderChatList();
+        } else {
+            errorElement.textContent = result.message || '添加失败';
+        }
     }
 
     async loadFriends() {
@@ -195,146 +379,10 @@ class ChatApp {
             }
         }
         
-        this.renderFriendsList();
+        this.renderChatList();
         if (this.currentFriend) {
             this.renderMessages();
         }
-    }
-
-    async addFriend() {
-        const friendUsername = document.getElementById('add-friend-input').value.trim();
-        const errorElement = document.getElementById('add-friend-error');
-
-        if (!friendUsername) {
-            errorElement.textContent = '请输入用户名';
-            return;
-        }
-
-        if (friendUsername === this.currentUser.username) {
-            errorElement.textContent = '不能添加自己为好友';
-            return;
-        }
-
-        const result = await this.fetchData('/api/add-friend', {
-            method: 'POST',
-            body: JSON.stringify({ userId: this.currentUser.id, friendUsername })
-        });
-
-        if (result.success) {
-            this.friends.push(result.friend);
-            this.messages[result.friend.id] = [];
-            document.getElementById('add-friend-input').value = '';
-            errorElement.textContent = '';
-            this.renderFriendsList();
-        } else {
-            errorElement.textContent = result.message || '添加失败';
-        }
-    }
-
-    renderFriendsList() {
-        const friendsList = document.getElementById('friends-list');
-        
-        if (this.friends.length === 0) {
-            friendsList.innerHTML = '<div class="empty-state">暂无好友</div>';
-            return;
-        }
-
-        friendsList.innerHTML = this.friends.map(friend => {
-            const unreadCount = this.getUnreadCount(friend.id);
-            return `
-                <div class="friend-item" data-friend-id="${friend.id}">
-                    <div class="avatar small">
-                        <span>${friend.username.charAt(0).toUpperCase()}</span>
-                    </div>
-                    <span class="friend-name">${friend.username}</span>
-                    ${unreadCount > 0 ? `<span class="unread">${unreadCount}</span>` : ''}
-                </div>
-            `;
-        }).join('');
-
-        document.querySelectorAll('.friend-item').forEach(item => {
-            item.addEventListener('click', () => this.selectFriend(item.dataset.friendId));
-        });
-    }
-
-    getUnreadCount(friendId) {
-        const friendMessages = this.messages[friendId] || [];
-        return friendMessages.filter(m => !m.read && m.senderId !== this.currentUser.id).length;
-    }
-
-    selectFriend(friendId) {
-        const friend = this.friends.find(f => f.id === friendId);
-        if (!friend) return;
-
-        this.currentFriend = friend;
-        
-        document.querySelectorAll('.friend-item').forEach(item => {
-            item.classList.remove('active');
-            if (item.dataset.friendId === friendId) {
-                item.classList.add('active');
-            }
-        });
-
-        this.markMessagesAsRead(friendId);
-        this.renderChatHeader();
-        this.renderMessages();
-        this.showMessageInput();
-    }
-
-    async markMessagesAsRead(friendId) {
-        const friendMessages = this.messages[friendId] || [];
-        friendMessages.forEach(m => m.read = true);
-        
-        await this.fetchData('/api/mark-read', {
-            method: 'POST',
-            body: JSON.stringify({ userId: this.currentUser.id, friendId })
-        });
-        
-        this.renderFriendsList();
-    }
-
-    renderChatHeader() {
-        const header = document.getElementById('chat-header');
-        if (this.currentFriend) {
-            header.innerHTML = `
-                <div class="friend-info">
-                    <div class="avatar small">
-                        <span>${this.currentFriend.username.charAt(0).toUpperCase()}</span>
-                    </div>
-                    <span class="friend-name">${this.currentFriend.username}</span>
-                </div>
-            `;
-        }
-    }
-
-    renderMessages() {
-        const container = document.getElementById('messages-container');
-        
-        if (!this.currentFriend) {
-            container.innerHTML = '<div class="empty-chat"><p>选择一个好友开始聊天</p></div>';
-            return;
-        }
-
-        const friendMessages = this.messages[this.currentFriend.id] || [];
-        
-        if (friendMessages.length === 0) {
-            container.innerHTML = '<div class="empty-chat"><p>还没有消息，开始聊天吧！</p></div>';
-            return;
-        }
-
-        container.innerHTML = friendMessages.map(msg => `
-            <div class="message ${msg.senderId === this.currentUser.id ? 'sent' : 'received'}">
-                <p>${msg.content}</p>
-                <span class="message-time">${msg.time}</span>
-            </div>
-        `).join('');
-
-        container.scrollTop = container.scrollHeight;
-    }
-
-    showMessageInput() {
-        document.getElementById('message-input-area').style.display = 'flex';
-        document.getElementById('message-input').focus();
     }
 
     async send() {
@@ -359,7 +407,47 @@ class ChatApp {
             this.messages[this.currentFriend.id].push(result.message);
             input.value = '';
             this.renderMessages();
+            this.renderChatList();
         }
+    }
+
+    logout() {
+        localStorage.removeItem('currentUser');
+        this.stopPolling();
+        this.currentUser = null;
+        this.currentFriend = null;
+        this.friends = [];
+        this.messages = {};
+        document.getElementById('main-screen').style.display = 'none';
+        document.getElementById('chat-view').style.display = 'none';
+        document.getElementById('auth-screen').style.display = 'flex';
+        document.getElementById('auth-screen').classList.add('screen');
+        document.getElementById('login-username').value = '';
+        document.getElementById('login-password').value = '';
+    }
+
+    shareApp() {
+        const shareText = `我在使用 YanChat，快来和我聊天吧！访问: ${window.location.href}`;
+        
+        if (navigator.share) {
+            navigator.share({
+                title: 'YanChat',
+                text: shareText,
+                url: window.location.href
+            }).catch(err => {
+                this.copyToClipboard(shareText);
+            });
+        } else {
+            this.copyToClipboard(shareText);
+        }
+    }
+
+    copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert('分享内容已复制到剪贴板！');
+        }).catch(() => {
+            alert('分享内容：\n' + text);
+        });
     }
 }
 

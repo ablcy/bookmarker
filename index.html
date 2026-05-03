@@ -2,15 +2,20 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat - 简易聊天工具</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>YanChat</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div id="app">
         <div id="auth-screen" class="screen">
             <div class="auth-container">
-                <h1>Chat</h1>
+                <div class="auth-header">
+                    <div class="app-logo">YC</div>
+                    <h1>YanChat</h1>
+                    <p>简易社交聊天工具</p>
+                </div>
+                
                 <div class="auth-tabs">
                     <button id="login-tab" class="active">登录</button>
                     <button id="register-tab">注册</button>
@@ -24,7 +29,7 @@
                 </form>
                 
                 <form id="register-form" style="display: none;">
-                    <input type="text" id="register-username" placeholder="用户名" required>
+                    <input type="text" id="register-username" placeholder="用户名（至少3个字符）" required>
                     <input type="password" id="register-password" placeholder="密码" required>
                     <input type="password" id="register-password-confirm" placeholder="确认密码" required>
                     <button type="submit">注册</button>
@@ -34,54 +39,110 @@
         </div>
 
         <div id="main-screen" class="screen" style="display: none;">
-            <div class="main-container">
-                <aside class="sidebar">
-                    <div class="user-info">
-                        <div class="avatar">
-                            <span>{{currentUser?.username?.charAt(0)?.toUpperCase() || '?'}}</span>
-                        </div>
-                        <div class="user-details">
-                            <span class="username">{{currentUser?.username || '未登录'}}</span>
-                            <button id="logout-btn">退出登录</button>
+            <header class="header">
+                <h1 id="page-title">YanChat</h1>
+                <button id="menu-btn" class="icon-btn">☰</button>
+            </header>
+
+            <main class="main-content">
+                <div id="tab-chats" class="tab-content active">
+                    <div class="search-bar">
+                        <input type="text" placeholder="搜索" id="search-input">
+                    </div>
+                    <div class="chat-list" id="chat-list">
+                        <div class="empty-state">暂无聊天记录</div>
+                    </div>
+                </div>
+
+                <div id="tab-contacts" class="tab-content">
+                    <div class="search-bar">
+                        <input type="text" placeholder="搜索好友" id="search-contact-input">
+                    </div>
+                    <div class="contacts-list" id="contacts-list">
+                        <div class="empty-state">暂无好友</div>
+                    </div>
+                    <button id="add-friend-btn" class="fab-btn">+</button>
+                </div>
+
+                <div id="tab-discover" class="tab-content">
+                    <div class="discover-list">
+                        <div class="discover-item" id="share-app-btn">
+                            <span class="discover-icon">📤</span>
+                            <span>分享应用</span>
+                            <span class="arrow">›</span>
                         </div>
                     </div>
-                    
-                    <div class="sidebar-section">
-                        <h3>好友列表</h3>
-                        <div class="friends-list" id="friends-list">
-                            <div class="empty-state">暂无好友</div>
+                </div>
+
+                <div id="tab-me" class="tab-content">
+                    <div class="profile-header">
+                        <div class="avatar-large">
+                            <span id="profile-avatar">?</span>
+                        </div>
+                        <div class="profile-info">
+                            <span id="profile-username" class="profile-name">未登录</span>
                         </div>
                     </div>
-                    
-                    <div class="sidebar-section">
+                    <div class="settings-list">
+                        <div class="settings-item" id="logout-btn">
+                            <span>退出登录</span>
+                            <span class="arrow">›</span>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <nav class="bottom-nav">
+                <div class="nav-item active" data-tab="chats">
+                    <span class="nav-icon">💬</span>
+                    <span>消息</span>
+                </div>
+                <div class="nav-item" data-tab="contacts">
+                    <span class="nav-icon">👥</span>
+                    <span>通讯录</span>
+                </div>
+                <div class="nav-item" data-tab="discover">
+                    <span class="nav-icon">🔍</span>
+                    <span>发现</span>
+                </div>
+                <div class="nav-item" data-tab="me">
+                    <span class="nav-icon">👤</span>
+                    <span>我</span>
+                </div>
+            </nav>
+
+            <div id="chat-view" class="chat-view" style="display: none;">
+                <div class="chat-header">
+                    <button id="back-btn" class="icon-btn">‹</button>
+                    <span id="chat-friend-name">好友名称</span>
+                    <button class="icon-btn">⋮</button>
+                </div>
+                <div id="messages-container" class="messages-container">
+                    <div class="empty-chat">
+                        <p>开始聊天吧！</p>
+                    </div>
+                </div>
+                <div class="message-input-area">
+                    <button id="emoji-btn" class="icon-btn">😊</button>
+                    <input type="text" id="message-input" placeholder="输入消息...">
+                    <button id="send-btn" class="send-btn">发送</button>
+                </div>
+            </div>
+
+            <div id="add-friend-modal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
                         <h3>添加好友</h3>
+                        <button id="close-modal-btn" class="icon-btn">×</button>
+                    </div>
+                    <div class="modal-body">
                         <input type="text" id="add-friend-input" placeholder="输入用户名">
-                        <button id="add-friend-btn">添加</button>
                         <p class="error-message" id="add-friend-error"></p>
                     </div>
-                </aside>
-
-                <main class="chat-area">
-                    <div id="chat-header" class="chat-header">
-                        <div class="friend-info">
-                            <div class="avatar small">
-                                <span>?</span>
-                            </div>
-                            <span class="friend-name">选择好友开始聊天</span>
-                        </div>
+                    <div class="modal-footer">
+                        <button id="confirm-add-friend-btn">添加</button>
                     </div>
-                    
-                    <div id="messages-container" class="messages-container">
-                        <div class="empty-chat">
-                            <p>选择一个好友开始聊天</p>
-                        </div>
-                    </div>
-                    
-                    <div id="message-input-area" class="message-input-area" style="display: none;">
-                        <input type="text" id="message-input" placeholder="输入消息...">
-                        <button id="send-btn">发送</button>
-                    </div>
-                </main>
+                </div>
             </div>
         </div>
     </div>
