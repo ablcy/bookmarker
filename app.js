@@ -310,11 +310,16 @@ class ChatApp {
         document.getElementById('chat-friend-name').textContent = friend.username;
         this.renderMessages();
         this.markMessagesAsRead(friendId);
-        document.getElementById('chat-view').style.display = 'flex';
+        
+        const chatView = document.getElementById('chat-view');
+        chatView.style.display = 'flex';
+        chatView.classList.add('active');
     }
 
     closeChatView() {
-        document.getElementById('chat-view').style.display = 'none';
+        const chatView = document.getElementById('chat-view');
+        chatView.style.display = 'none';
+        chatView.classList.remove('active');
         this.currentFriend = null;
         this.renderChatList();
     }
@@ -409,6 +414,7 @@ class ChatApp {
         
         this.renderContactsList();
         this.renderChatList();
+        await this.loadMessages();
     }
 
     async loadMessages() {
