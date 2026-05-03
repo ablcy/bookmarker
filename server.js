@@ -8,48 +8,24 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
+
 const io = new Server(server, {
   cors: {
     origin: "*",
-    methods: ["GET", "POST"]
-  }
+    methods: ["GET", "POST"],
+    transports: ["websocket", "polling"]
+  },
+  allowEIO3: true,
+  pingTimeout: 60000
 });
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-const DATA_DIR = './data';
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-const MESSAGES_FILE = path.join(DATA_DIR, 'messages.json');
-const FRIENDS_FILE = path.join(DATA_DIR, 'friends.json');
-
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-const loadData = (filePath, defaultValue = []) => {
-  try {
-    if (fs.existsSync(filePath)) {
-      return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    }
-  } catch (err) {
-    console.error(`Error loading ${filePath}:`, err);
-  }
-  return defaultValue;
-};
-
-const saveData = (filePath, data) => {
-  try {
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
-  } catch (err) {
-    console.error(`Error saving ${filePath}:`, err);
-  }
-};
-
-let users = loadData(USERS_FILE, {});
-let messages = loadData(MESSAGES_FILE, {});
-let friends = loadData(FRIENDS_FILE, {});
+let users = {};
+let messages = {};
+let friends = {};
 
 const generateId = () => uuidv4();
 
@@ -76,16 +52,12 @@ app.post('/api/register', (req, res) => {
     createdAt: new Date().toISOString()
   };
   
-  saveData(USERS_FILE, users);
-  
   if (!friends[userId]) {
     friends[userId] = [];
-    saveData(FRIENDS_FILE, friends);
   }
   
   if (!messages[userId]) {
     messages[userId] = {};
-    saveData(MESSAGES_FILE, messages);
   }
   
   res.json({ success: true, user: { id: userId, username } });
@@ -134,17 +106,19 @@ app.post('/api/add-friend', (req, res) => {
     friends[friend.id].push(userId);
   }
   
-  saveData(FRIENDS_FILE, friends);
-  
+  if (!messages[userId]) {
+    messages[userId] = {};
+  }
   if (!messages[userId][friend.id]) {
     messages[userId][friend.id] = [];
   }
   
+  if (!messages[friend.id]) {
+    messages[friend.id] = {};
+  }
   if (!messages[friend.id][userId]) {
     messages[friend.id][userId] = [];
   }
-  
-  saveData(MESSAGES_FILE, messages);
   
   res.json({ success: true, friend: { id: friend.id, username: friend.username } });
 });
@@ -172,6 +146,11 @@ app.get('/api/messages/:userId/:friendId', (req, res) => {
   const friendMessages = userMessages[friendId] || [];
   
   res.json({ success: true, messages: friendMessages });
+});
+
+app.get('/api/users', (req, res) => {
+  const userList = Object.values(users).map(u => ({ id: u.id, username: u.username }));
+  res.json({ success: true, users: userList });
 });
 
 io.on('connection', (socket) => {
@@ -211,8 +190,6 @@ io.on('connection', (socket) => {
     }
     messages[receiverId][senderId].push(message);
     
-    saveData(MESSAGES_FILE, messages);
-    
     io.to(receiverId).emit('new_message', {
       senderId,
       message
@@ -230,7 +207,6 @@ io.on('connection', (socket) => {
           msg.read = true;
         }
       });
-      saveData(MESSAGES_FILE, messages);
     }
   });
   
